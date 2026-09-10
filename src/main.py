@@ -3,6 +3,7 @@ from pathlib import Path
 from loader import DataLoader
 from cleaner import DataCleaner
 from validator import DataValidator
+from analyzer import SalesAnalyzer
 
 def main():
 
@@ -41,6 +42,13 @@ def main():
     else:
         print("\nNo warnings found.")
 
+    analyzer = SalesAnalyzer(clean_df)
+    print("\n## DATA ANALYSIS RESULTS")
+    print(f"Total Sales: {analyzer.total_sales()}")
+    print(f"Total Profit: {analyzer.total_profit()}")
+    print(f"Total Quantity: {analyzer.total_quantity()}")
+    print(f"Average Order Value: {analyzer.average_order_value()}")
+    print(f"Profit Margin: {analyzer.profit_margin():.2f}%")
 if __name__ == "__main__":
     main()
            
