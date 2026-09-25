@@ -9,6 +9,7 @@ class SalesAnalyzer:
 
     def __init__(self, df):
         self.df = df
+        self.df = df
         
 
     def total_sales(self):
@@ -104,4 +105,108 @@ class SalesAnalyzer:
             .sum()
             .sort_values(ascending=False)
             .head(n)
+        )
+
+    def sales_by_year(self):
+        """Calculate sales by year."""
+
+        self.df["Order_Date"] = pd.to_datetime(self.df["Order_Date"])
+        return (
+            self.df.groupby(self.df["Order_Date"].dt.year)["Sales"]
+            .sum()
+            .sort_index()
+        )
+
+    def sales_growth_by_year(self):
+        """Calculate year-over-year sales growth."""
+
+        yearly_sales = self.sales_by_year()
+
+        return yearly_sales.pct_change() * 100
+
+    def sales_by_month(self):
+        """Calculate sales by month."""
+
+        return (
+            self.df.groupby(
+                self.df["Order_Date"].dt.month
+            )["Sales"]
+            .sum()
+            .sort_index()
+        )
+    def profit_by_year(self):
+        """Calculate profit by year."""
+
+        self.df["Order_Date"] = pd.to_datetime(self.df["Order_Date"])
+        return (
+            self.df.groupby(self.df["Order_Date"].dt.year)["Profit"]
+            .sum()
+            .sort_index()
+        )
+    def top_products_by_profit(self, n=10):
+        """Return top products by profit."""
+        return (
+            self.df.groupby("Product_Name")["Profit"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(n)
+        )
+
+    def bottom_products_by_profit(self, n=10):
+        """Return bottom products by profit."""
+        return (
+            self.df.groupby("Product_Name")["Profit"]
+            .sum()
+            .sort_values(ascending=True)
+            .head(n)
+        )
+    def profit_by_discount(self):
+        """Calculate profit by discount band."""
+
+        df = self.df.copy()
+
+        df["Discount_Band"] = pd.cut(
+            df["Discount"],
+            bins=[
+                -0.01,
+                0,
+                0.10,
+                0.20,
+                0.40,
+                1.00
+            ],
+            labels=[
+                "No Discount",
+                "Low (1-10%)",
+                "Moderate (11-20%)",
+                "High (21-40%)",
+                "Very High (41%+)"
+            ]
+        )
+
+        return (
+            df.groupby(
+                "Discount_Band",
+                observed=False
+            )
+            .agg(
+                Profit=("Profit", "sum"),
+                Average_Profit=("Profit", "mean"),
+                Records=("Profit", "count")
+            )
+        )
+
+    def performance_by_ship_mode(self):
+        """Calculate sales and profit by shipping mode."""
+        return (
+            self.df.groupby("Ship_Mode")
+            .agg({
+                "Sales": "sum",
+                "Profit": "sum",
+                "Order_ID": "nunique"
+            })
+            .sort_values(
+                "Sales",
+                ascending=False
+            )
         )
