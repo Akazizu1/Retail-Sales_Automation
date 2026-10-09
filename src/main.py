@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 from loader import DataLoader
@@ -5,73 +6,100 @@ from cleaner import DataCleaner
 from validator import DataValidator
 from analyzer import SalesAnalyzer
 from exporter import ExcelExporter
+from logger import setup_logger
+
 
 def main():
 
-    data_folder = Path(__file__).resolve().parent.parent / "data" / "raw"
-    loader = DataLoader(data_folder)
+    # Project paths
+    project_folder = Path(__file__).resolve().parent.parent
+    data_folder = project_folder / "data" / "raw"
+    reports_folder = project_folder / "data" / "reports"
 
-    df = loader.load_all_files()
+    logger = setup_logger(reports_folder)
 
-    print("\n## DATA LOADED SUCCESSFULLY")
-    print(f"\nRows  : {df.shape[0]}")
-    print(f"Columns: {df.shape[1]}")
+    try:
+        # -----------------------------
+        # Load data
+        # -----------------------------
 
-    cleaner = DataCleaner(df)
+        logger.info("Starting retail sales automation.")
 
-    clean_df = cleaner.clean()
+        loader = DataLoader(data_folder)
+        df = loader.load_all_files()
 
-    print("\n## DATA CLEANED SUCCESSFULLY")
-    print(f"\nRows  : {clean_df.shape[0]}")
-    print(f"Columns: {clean_df.shape[1]}")
+        logger.info(
+            "Data loaded successfully. Rows: %s, Columns: %s",
+            df.shape[0],
+            df.shape[1]
+        )
 
-    validator = DataValidator(clean_df)
-    errors, warnings = validator.validate()
+        # -----------------------------
+        # Clean data
+        # -----------------------------
 
-    print("\n## DATA VALIDATION RESULTS")
-    if errors:
-        print("\nErrors:")
-        for error in errors:
-            print(f"- {error}")
-    else:
-        print("\nNo errors found.")
+        cleaner = DataCleaner(df)
+        clean_df = cleaner.clean()
 
-    if warnings:
-        print("\nWarnings:")
-        for warning in warnings:
-            print(f"- {warning}")
-    else:
-        print("\nNo warnings found.")
+        logger.info(
+            "Data cleaned successfully. Rows: %s, Columns: %s",
+            clean_df.shape[0],
+            clean_df.shape[1]
+        )
 
-    
-    analyzer = SalesAnalyzer(clean_df)
-   
-    print("\n## DATA ANALYSIS RESULTS")
-    print(f"Total Sales: {analyzer.total_sales()}")
-    print(f"Total Profit: {analyzer.total_profit()}")
-    print(f"Total Quantity: {analyzer.total_quantity()}")
-    print(f"Average Order Value: {analyzer.average_order_value()}")
-    print(f"Profit Margin: {analyzer.profit_margin():.2f}%")
+        # -----------------------------
+        # Validate data
+        # -----------------------------
 
-    """Export Report"""
-    exporter = ExcelExporter("data/reports")
-    exporter.export_report(analyzer)
-    
-    print("\nSales by Year:")
-    print(analyzer.sales_by_year())
-    print("\nProfit by Year:")
-    print(analyzer.profit_by_year())
-    print("\nTop Products by Profit:")
-    print(analyzer.top_products_by_profit())
-    print("\nBottom Products by Profit:")
-    print(analyzer.bottom_products_by_profit())
-    print("\nProfit by Discount:")
-    print(analyzer.profit_by_discount())
-    print("\nPerformance by Ship Mode:")
-    print(analyzer.performance_by_ship_mode())
-    print("\nSales Growth by Year:")
-    print(analyzer.sales_growth_by_year())
-    print("\nProfit by Discount Band:")
-    print(analyzer.profit_by_discount())
+        validator = DataValidator(clean_df)
+        errors, warnings = validator.validate()
+
+        if errors:
+            for error in errors:
+                logger.error("Validation error: %s", error)
+        else:
+            logger.info("Data validation completed with no errors.")
+
+        if warnings:
+            for warning in warnings:
+                logger.warning("Validation warning: %s", warning)
+        else:
+            logger.info("No validation warnings found.")
+
+        # -----------------------------
+        # Analyze data
+        # -----------------------------
+
+        analyzer = SalesAnalyzer(clean_df)
+
+        logger.info("Starting sales analysis.")
+
+        logger.info("Total Sales: %.2f", analyzer.total_sales())
+        logger.info("Total Profit: %.2f", analyzer.total_profit())
+        logger.info("Total Quantity: %s", analyzer.total_quantity())
+        logger.info(
+            "Average Order Value: %.2f",
+            analyzer.average_order_value()
+        )
+        logger.info(
+            "Profit Margin: %.2f%%",
+            analyzer.profit_margin()
+        )
+
+        # -----------------------------
+        # Export report
+        # -----------------------------
+
+        exporter = ExcelExporter(reports_folder)
+        output_file = exporter.export_report(analyzer)
+
+        logger.info("Excel report generated: %s", output_file)
+        logger.info("Retail sales automation completed successfully.")
+
+    except Exception:
+        logger.exception("Retail sales automation failed.")
+        raise
+
+
 if __name__ == "__main__":
     main()
