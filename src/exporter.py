@@ -91,6 +91,8 @@ class ExcelExporter:
         ).reset_index()
         yearly.columns = ["Year", "Sales", "Profit", "Growth"]
 
+        discount = analyzer.profit_by_discount().reset_index()
+        discount.columns = ["Discount", "Profit","Records","Average Profit"]
 
         products = analyzer.top_products().reset_index()
         products.columns = ["Product", "Sales"]
@@ -141,7 +143,12 @@ class ExcelExporter:
                 sheet_name="Top Products",
                 index=False
             )
-
+            discount.to_excel(
+                writer,
+                sheet_name="Discount Analysis",
+                index=False
+            )
+            
             customers.to_excel(
                 writer,
                 sheet_name="Top Customers",
@@ -297,6 +304,37 @@ class ExcelExporter:
                     end_color="63BE7B"
                 )
             )
+               
+        # ---------------------------------
+        # Yearly Analysis
+        # ---------------------------------
+
+        yearly = workbook["Yearly Analysis"]
+
+        for row in range(
+             2,
+             yearly.max_row + 1
+        ):
+
+             yearly[f"B{row}"].number_format = '#,##0.00'
+             yearly[f"C{row}"].number_format = '#,##0.00'
+             yearly[f"D{row}"].number_format = '#,##0'
+
+
+        # ---------------------------------
+        # Discount Analysis
+        # ---------------------------------
+
+        discount = workbook["Discount Analysis"]
+
+        for row in range(
+             2,
+             discount.max_row + 1
+        ):
+
+            discount[f"B{row}"].number_format = '#,##0.00'
+            discount[f"C{row}"].number_format = '#,##0.00'
+            discount[f"D{row}"].number_format = '#,##0'    
 
         # ---------------------------------
         # Segment
@@ -365,6 +403,9 @@ class ExcelExporter:
             workbook["Top Customers"],
             "CustomersTable"
         )
+
+        self.add_table(workbook["Yearly Analysis"], "YearlyTable")
+        self.add_table(workbook["Discount Analysis"], "DiscountTable")
 
         workbook.save(output_file)
 
@@ -539,6 +580,95 @@ class ExcelExporter:
         dashboard.add_chart(
             category_chart,
             "B11"
+        )
+        # ---------------------------------
+        # Yearly Sales Chart
+        # ---------------------------------
+
+        yearly_sheet = workbook["Yearly Analysis"]
+
+        yearly_chart = BarChart()
+
+        yearly_chart.type = "col"
+        yearly_chart.style = 10
+        yearly_chart.title = "Sales by Year"
+        yearly_chart.y_axis.title = "Sales"
+        yearly_chart.x_axis.title = "Year"
+
+        data = Reference(
+            yearly_sheet,
+            min_col=2,
+            min_row=1,
+            max_row=yearly_sheet.max_row
+        )
+
+        years = Reference(
+            yearly_sheet,
+            min_col=1,
+            min_row=2,
+            max_row=yearly_sheet.max_row
+        )
+
+        yearly_chart.add_data(
+            data,
+            titles_from_data=True
+        )
+
+        yearly_chart.set_categories(
+            years
+        )
+
+        yearly_chart.height = 7
+        yearly_chart.width = 11
+
+        dashboard.add_chart(
+            yearly_chart,
+            "B26"
+        )
+
+        # ---------------------------------
+        # Profit by Discount Band Chart
+        # ---------------------------------
+
+        discount_sheet = workbook["Discount Analysis"]
+
+        discount_chart = BarChart()
+
+        discount_chart.type = "col"
+        discount_chart.style = 11
+        discount_chart.title = "Profit by Discount Band"
+        discount_chart.y_axis.title = "Profit"
+        discount_chart.x_axis.title = "Discount Band"
+
+        data = Reference(
+            discount_sheet,
+            min_col=2,
+            min_row=1,
+            max_row=discount_sheet.max_row
+        )
+
+        discount_bands = Reference(
+            discount_sheet,
+            min_col=1,
+            min_row=2,
+            max_row=discount_sheet.max_row
+        )
+
+        discount_chart.add_data(
+            data,
+            titles_from_data=True
+        )
+
+        discount_chart.set_categories(
+            discount_bands
+        )
+
+        discount_chart.height = 7
+        discount_chart.width = 11
+
+        dashboard.add_chart(
+            discount_chart,
+            "H26"
         )
 
         # ---------------------------------
